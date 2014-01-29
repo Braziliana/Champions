@@ -1,0 +1,571 @@
+if myHero.charName == "Darius" then
+
+local cel
+
+local PrzeciwnicyTablica = {}
+
+local PrzeciwneMiniony = {}
+
+local HemorrhageTablica ={
+    [1] = "darius_hemo_counter_01.troy",
+    [2] = "darius_hemo_counter_02.troy",
+    [3] = "darius_hemo_counter_03.troy",
+    [4] = "darius_hemo_counter_04.troy",
+    [5] = "darius_hemo_counter_05.troy",
+}
+
+local SprawdzCzyMoznaUzycUlti = {
+    {name="Tryndamere", spellName="undyingRage", enabled=false, spellType=0, spellLevel=1, duration=5000, spellParticle="undyingrage_glow"},
+    {name="Kayle", spellName="eyeForEye", enabled=false, spellType=0, spellLevel=1, duration=3000, spellParticle="eyeforaneye"},
+    {name="Zilean", spellName="nickOfTime", enabled=false, spellType=0, spellLevel=1, duration=7000, spellParticle="nickoftime_tar"},
+    {name="Nocturne", spellName="shroudOfDarkness", enabled=false, spellType=0, spellLevel=1,duration=1500,spellParticle="nocturne_shroudofdarkness_shield_cas_02"},
+    {name="Blitzcrank", spellName="manaBarrier", enabled=false, spellType=1, spellLevel=1, duration=10000, spellParticle="manabarrier"},
+    {name="Sivir", spellName="spellShield", enabled=false, spellType=0, spellLevel=1, duration=3000, spellParticle="spellblock_eff"}
+}
+
+local CzasTrwaniaHemorrhage = 5000
+
+local StreamMod = false
+local NastepnyTick = 0
+local Opuznienie = 400
+
+local Executioner = false 
+local Havoc = 0
+
+local ZasiegZewnetrznyQ = 400
+local ZasiegWewnetrznyQ = 270
+local ZasiegE = 500
+local ZasiegR = 465
+local ZasiegAA = 200
+
+local GotoweQ = false
+local GotoweW =	false
+local GotoweE = false
+local GotoweR = false
+
+local ignite = nil
+
+local MamDFG = nil
+local MamHXG = nil
+local MamBRK = nil
+local MamBWC = nil
+local MamSheen = nil
+local MamTrinity= nil
+local MamLichBane = nil
+local MamTMT = nil
+local MamRAH = nil
+local MamRND = nil
+local MamSTD = nil 
+
+local GotoweDFG = false
+local GotoweHXG = false
+local GotoweBRK = false
+local GotoweBWC = false
+local GotoweSheen = false
+local GotoweTrinity= false
+local GotoweLichBane = false
+local GotoweTMT = false
+local GotoweRAH = false
+local GotoweRND = false
+local GotoweSTD = false
+local GotoweIgnite = false
+
+
+local Obrazenia1 = 0
+local Obrazenia2 = 0
+local Obrazenia3 = 0
+local Obrazenia4 = 0
+
+
+
+function OnLoad()
+	
+	DariusUstawienia = scriptConfig("DARIUS", "DARIOOOO!")
+	DariusUstawienia:addParam("PanicznaWalka", "Panic Combo", SCRIPT_PARAM_ONKEYDOWN, false, 83)
+	DariusUstawienia:addParam("Kombo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
+	--DariusUstawienia:addParam("Farmienie", "Auto Farm", SCRIPT_PARAM_ONKEYDOWN, false, 65)
+	DariusUstawienia:addParam("MocneObijanie","Perfect Harass", SCRIPT_PARAM_ONKEYTOGGLE, false, 90)
+	DariusUstawienia:addParam("Obijanie","Harass", SCRIPT_PARAM_ONKEYTOGGLE, false, 88)
+	DariusUstawienia:addParam("AutomatycznyIgnite", "Ignite when Killable", SCRIPT_PARAM_ONOFF, true)
+	DariusUstawienia:addParam("IdzDoMyszki", "Move to mouse", SCRIPT_PARAM_ONOFF, true)
+	DariusUstawienia:addParam("MamHavoc", "Added point in Havoc", SCRIPT_PARAM_ONOFF, false)
+	DariusUstawienia:addParam("MamExecutioner", "Added 3 points in Executioner", SCRIPT_PARAM_ONOFF, false)
+	DariusUstawienia:addParam("MamDoubleEdgedSword", "Added point in DoubleEdgedSword", SCRIPT_PARAM_ONOFF, false)
+	DariusUstawienia:addParam("OdejmijObrazenia","Subtract dmg in ks mode",SCRIPT_PARAM_SLICE, 10, 0, 30, 0)
+	DariusUstawienia:addParam("Stream", "Stream Mode", SCRIPT_PARAM_ONOFF, false)
+	DariusUstawienia:addParam("ZasiegCzarow", "Draw Spell Range", SCRIPT_PARAM_ONOFF, true)
+	DariusUstawienia:addParam("ZasiegKombo", "Draw Combo Range", SCRIPT_PARAM_ONOFF, true)
+	DariusUstawienia:addParam("KolaPrzeciwnicy", "Draw Circles on enemies", SCRIPT_PARAM_ONOFF, true)
+	
+	DariusUstawienia:permaShow("PanicznaWalka")
+	DariusUstawienia:permaShow("Kombo")
+	DariusUstawienia:permaShow("MocneObijanie")
+	DariusUstawienia:permaShow("Obijanie")
+	
+	cel = TargetSelector(TARGET_LOW_HP,ZasiegE+150,DAMAGE_PHYSICAL)
+    cel.name = Darius
+    DariusUstawienia:addTS(cel)
+	
+	
+	if myHero:GetSpellData(SUMMONER_1).name:find("SummonerDot") then
+		ignite = SUMMONER_1
+	elseif myHero:GetSpellData(SUMMONER_2).name:find("SummonerDot") then
+		ignite = SUMMONER_2
+	end 
+	
+	for i=0, heroManager.iCount, 1 do
+		Przeciwnik = heroManager:GetHero(i)
+		if Przeciwnik.team ~= player.team then
+			Przeciwnik.IloscHemorrhage = 0
+			Przeciwnik.OstatnieHemorrhage = 0
+			Przeciwnik.MoznaZabic = true
+            Przeciwnik.CzasOdpornosci = 0
+            Przeciwnik.Tarcza = 0
+			table.insert(PrzeciwnicyTablica,Przeciwnik)
+			for i=1, #SprawdzCzyMoznaUzycUlti, 1 do
+                if SprawdzCzyMoznaUzycUlti[i].name == Przeciwnik.charName then
+                    SprawdzCzyMoznaUzycUlti[i].enabled = true
+                end
+            end
+		end
+    end
+	
+	PrintChat(">>> DARIUS KILLING MACHINE LOADED!!! <<<")
+	DariusUstawienia.Stream = false
+
+end
+
+function OnTick()
+
+
+	cel:update()
+	Czary()
+	Przedmioty()
+	DodajUlti()
+	AutomatyczneKradniecieZabujst()
+	AutomatycznyIgnite()
+	
+	if DariusUstawienia.Stream and not StreamMode then
+		for i = 0, 10 do
+            PrintChat("")
+        end
+		StreamMode = true
+		DisableOverlay()
+	end
+	
+	if DariusUstawienia.PanicznaWalka and cel.target ~= nil then
+		PanicznaWalka()
+	end
+	
+	if DariusUstawienia.Kombo and cel.target ~= nil then
+		Kombo()
+	end
+	
+	if DariusUstawienia.MocneObijanie and cel.target ~= nil then
+		MocneObijanie()
+	end
+	
+	if DariusUstawienia.Obijanie and cel.target ~= nil then
+		Obijanie()
+	end
+	
+	if DariusUstawienia.IdzDoMyszki and DariusUstawienia.PanicznaWalka or DariusUstawienia.IdzDoMyszki and DariusUstawienia.Kombo then
+		if cel.target ~= nil and GetDistance(cel.target) > ZasiegAA + 150 then
+			player:MoveTo(mousePos.x, mousePos.z)
+		elseif cel.target == nil then
+			player:MoveTo(mousePos.x, mousePos.z)
+		end
+	end
+	
+end
+
+
+function DodajUlti()
+
+    if myHero.level == 6 or myHero.level == 11 or myHero.level == 16 then
+      LevelSpell(_R)
+    end
+
+end
+
+
+function AutomatyczneKradniecieZabujst()
+	local ObrazeniaQ = 0
+	local ObrazeniaR = 0
+	local DodatkoweObrazenia = 0
+	local DodatkoweObrazeniaR = 0
+	for i, Przeciwnik in pairs(PrzeciwnicyTablica) do
+	
+        if Przeciwnik.IloscHemorrhage > 0 and GetTickCount() > Przeciwnik.OstatnieHemorrhage + 5000 then
+            Przeciwnik.IloscHemorrhage = 0
+		end	
+		
+		if DariusUstawienia.MamHavoc then
+			DodatkoweObrazenia = 1.0 + 0.03
+		end
+		if DariusUstawienia.MamExecutioner and Przeciwnik.health <= Przeciwnik.maxHealth/2 then
+			DodatkoweObrazenia = DodatkoweObrazenia + 0.05
+		end 
+		
+		if DariusUstawienia.MamDoubleEdgedSword then
+			DodatkoweObrazenia = DodatkoweObrazenia + 0.02
+		end
+		
+		if GotoweR and GetDistance(Przeciwnik) <= ZasiegR then
+			ObrazeniaR = (90*(player:GetSpellData(_R).level-1)+160+(.75*player.addDamage))*DodatkoweObrazenia - DariusUstawienia.OdejmijObrazenia
+		end
+		if GotoweR and Przeciwnik.IloscHemorrhage > 0  and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik.IloscHemorrhage > 0 then
+			ObrazeniaR = ((90*(player:GetSpellData(_R).level-1)+160+(.75*player.addDamage)) * (1.0 + Przeciwnik.IloscHemorrhage * 0.2))*DodatkoweObrazenia - DariusUstawienia.OdejmijObrazenia
+		end		
+		
+		if  GotoweQ and GetDistance(Przeciwnik) <= ZasiegZewnetrznyQ and GetDistance(Przeciwnik) > ZasiegWewnetrznyQ  then
+			ObrazeniaQ = (player:CalcDamage(Przeciwnik,35*(player:GetSpellData(_Q).level-1)+70+(.7*player.addDamage))*1.5)*DodatkoweObrazenia - DariusUstawienia.OdejmijObrazenia
+		else
+			ObrazeniaQ = (player:CalcDamage(Przeciwnik,35*(player:GetSpellData(_Q).level-1)+70+(.7*player.addDamage)))*DodatkoweObrazenia - DariusUstawienia.OdejmijObrazenia
+		end
+		
+		if not Przeciwnik.dead and GetDistance(Przeciwnik) < 3000 then
+			PrintFloatText(Przeciwnik,0,"" .. math.ceil(Przeciwnik.health - ObrazeniaR) .. " HP - " .. Przeciwnik.IloscHemorrhage)
+		end
+		
+		if not Przeciwnik.dead and GetDistance(Przeciwnik) < 3000 and Przeciwnik.health < ObrazeniaR then
+			if MoznaUzycUlti(Przeciwnik) == false then
+				PrintFloatText(Przeciwnik,0,"IMMUNE")
+			elseif MoznaUzycUlti(Przeciwnik) == true then
+				PrintFloatText(Przeciwnik,21,"Dunk")
+				PrintFloatText(Przeciwnik,0,"Dunk")         
+			end 
+		end
+		
+		-- KS
+		
+		if GotoweQ and Przeciwnik.team ~= myHero.team and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaQ and GetDistance(Przeciwnik) <= ZasiegZewnetrznyQ and Przeciwnik ~= nil then
+			CastSpell(_Q)
+		end
+		
+		if GotoweR and Przeciwnik.team ~= myHero.team and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaR and MoznaUzycUlti(Przeciwnik) == true and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik ~= nil then
+			CastSpell(_R, Przeciwnik)
+		end
+	end
+
+end
+
+
+function OnCreateObj(obj)
+	
+	for i=1, #SprawdzCzyMoznaUzycUlti, 1 do
+        if string.find(string.lower(obj.name),SprawdzCzyMoznaUzycUlti[i].spellParticle) and SprawdzCzyMoznaUzycUlti[i].enabled == true then
+            for i, Przeciwnik in pairs(PrzeciwnicyTablica) do
+                if GetDistance(Przeciwnik,obj) < 30 then
+                    if SprawdzCzyMoznaUzycUlti[i].spellType == 0 then
+                        Przeciwnik.MoznaZabic = false
+                        Przeciwnik.CzasOdpornosci = GetTickCount()+SprawdzCzyMoznaUzycUlti[i].duration
+                    elseif SprawdzCzyMoznaUzycUlti[i].spellType == 1 then
+                       Przeciwnik.Tarcza = Przeciwnik.Tarcza + WartoscTarczy(SprawdzCzyMoznaUzycUlti[i].spellName)
+                    end
+                end
+            end
+        end
+    end
+
+
+    if string.find(string.lower(obj.name),"darius_hemo_counter") then
+        for i, Przeciwnik in pairs(PrzeciwnicyTablica) do
+            if Przeciwnik and not Przeciwnik.dead and Przeciwnik.visible and  GetDistance(Przeciwnik, obj) <= 80 then
+				for j, Hemorrhage in pairs(HemorrhageTablica) do
+					if obj.name == Hemorrhage then
+						Przeciwnik.IloscHemorrhage = j
+						Przeciwnik.OstatnieHemorrhage = GetTickCount()
+						PrintFloatText(Przeciwnik,21,j .. " Bleedings")
+					end
+				end
+            end
+        end
+    end
+	
+end
+
+function OnDeleteObj(obj)
+
+	if obj then
+		for i=1, #SprawdzCzyMoznaUzycUlti, 1 do
+                        if string.find(string.lower(obj.name),SprawdzCzyMoznaUzycUlti[i].spellParticle) and SprawdzCzyMoznaUzycUlti[i].enabled == true then
+                                for i, Przeciwnik in pairs(PrzeciwnicyTablica) do
+                                        if GetDistance(Przeciwnik,obj) < 30 then
+                                                if SprawdzCzyMoznaUzycUlti[i].spellType == 0 then
+                                                        Przeciwnik.MoznaZabic = true
+                                                        Przeciwnik.CzasOdpornosci = 0
+                                                elseif SprawdzCzyMoznaUzycUlti[i].spellType == 1 then
+                                                        Przeciwnik.Tarcza = Przeciwnik.Tarcza - WartoscTarczy(SprawdzCzyMoznaUzycUlti[i].spellName)
+                                                        if Przeciwnik.Tarcza < 0 then
+                                                                Przeciwnik.Tarcza = 0
+                                                        end
+                                                end
+                                        end
+                                end
+                        end
+                end
+        end
+
+end
+
+function Czary()
+
+	GotoweQ = (myHero:CanUseSpell(_Q) == READY)
+	GotoweW = (myHero:CanUseSpell(_W) == READY)
+	GotoweE = (myHero:CanUseSpell(_E) == READY)
+	GotoweR = (myHero:CanUseSpell(_R) == READY)
+
+end
+
+
+function AutomatycznyIgnite()
+
+	if GotoweIgnite then
+        local ObrazeniaIgnite = 0    
+        for i = 1, heroManager.iCount, 1 do
+            local Przeciwnik = heroManager:getHero(i)
+            if ValidTarget(Przeciwnik,600) then
+                ObrazeniaIgnite = 50 + 20 * myHero.level
+                if Przeciwnik.health <= ObrazeniaIgnite then
+                    CastSpell(ignite, Przeciwnik)
+                end
+            end
+        end
+    end
+
+end
+
+
+function PanicznaWalka()
+
+	if GetDistance(cel.target) < 598 then
+		if GotoweDFG then 
+			CastSpell(MamDFG, cel.target) 
+		end
+        if GotoweHXG then 
+			CastSpell(MamHXG, cel.target) 
+		end
+        if GotoweBWC then 
+			CastSpell(MamBWC, cel.target) 
+		end
+        if GotoweBRK then 
+			CastSpell(MamBRK, cel.target) 
+		end      
+    end
+	
+	if GetDistance(cel.target) < 275 then	
+        if GotoweTMT then
+			CastSpell(MamTMT)
+		end
+        if GotoweRAH then 
+			CastSpell(MamRAH) 
+		end
+        if GotoweRND then
+			CastSpell(MamRND) 
+		end
+	end
+	
+	if GotoweW and GotoweE and GetDistance(cel.target) <= ZasiegE then
+		CastSpell(_W)
+	elseif GotoweW and not GotoweE then
+		if GetDistance(cel.target) <= ZasiegAA then
+			CastSpell(_W)
+		end
+	end
+	
+	if GotoweE and GetDistance(cel.target) <= ZasiegE then
+		CastSpell(_E, cel.target.x, cel.target.z)
+	end
+	
+	if GotoweQ and GetDistance(cel.target) <= ZasiegZewnetrznyQ then
+		CastSpell(_Q)
+	end
+	
+	if GotoweR and GetDistance(cel.target) <= ZasiegR then
+		CastSpell(_R, cel.target)
+	end
+	
+	if GetDistance(cel.target) <= ZasiegAA + 150 then
+		myHero:Attack(cel.target)
+	end
+	
+end
+
+
+function Kombo()
+
+	if GetDistance(cel.target) < 598 then
+		if GotoweDFG then 
+			CastSpell(MamDFG, cel.target) 
+		end
+        if GotoweHXG then 
+			CastSpell(MamHXG, cel.target) 
+		end
+        if GotoweBWC then 
+			CastSpell(MamBWC, cel.target) 
+		end
+        if GotoweBRK then 
+			CastSpell(MamBRK, cel.target) 
+		end      
+    end
+	
+	if GetDistance(cel.target) < 275 then	
+        if GotoweTMT then
+			CastSpell(MamTMT)
+		end
+        if GotoweRAH then 
+			CastSpell(MamRAH) 
+		end
+        if GotoweRND then
+			CastSpell(MamRND) 
+		end
+	end
+	
+	if GotoweW and GotoweE and GetDistance(cel.target) <= ZasiegE then
+		CastSpell(_W)
+	elseif GotoweW and not GotoweE then
+		if GetDistance(cel.target) <= ZasiegAA then
+			CastSpell(_W)
+		end
+	end
+	
+	if GotoweE and GetDistance(cel.target) <= ZasiegE then
+		CastSpell(_E, cel.target.x, cel.target.z)
+	end
+	
+	if GotoweQ and GetDistance(cel.target) <= ZasiegZewnetrznyQ then
+		CastSpell(_Q)
+	end
+	
+	if GetDistance(cel.target) <= ZasiegAA + 150 then
+		myHero:Attack(cel.target)
+	end
+	
+end
+
+
+function MocneObijanie()
+
+	if GotoweQ and GetDistance(cel.target) <= ZasiegZewnetrznyQ and GetDistance(cel.target) > ZasiegWewnetrznyQ  then
+		CastSpell(_Q)
+	end
+end
+
+
+function Obijanie()
+
+	if GotoweQ and GetDistance(cel.target) <= ZasiegZewnetrznyQ  then
+		CastSpell(_Q)
+	end
+end
+
+
+function Przedmioty()
+
+	MamDFG = GetInventorySlotItem(3128)
+	MamHXG = GetInventorySlotItem(3146)
+	MamBWC = GetInventorySlotItem(3144)
+	MamSheen = GetInventorySlotItem(3057)
+	MamTrinity = GetInventorySlotItem(3078)
+	MamLichBane = GetInventorySlotItem(3100)
+	MamBRK = GetInventorySlotItem(3153)
+	MamTMT = GetInventorySlotItem(3077)
+	MamRAH = GetInventorySlotItem(3074)
+	MamRND = GetInventorySlotItem(3143)
+	MamSTD = GetInventorySlotItem(3131)
+	
+    GotoweDFG = (MamDFG ~= nil and myHero:CanUseSpell(MamDFG) == READY)
+    GotoweHXG = (MamHXG ~= nil and myHero:CanUseSpell(MamHXG) == READY)
+    GotoweBWC = (MamBWC ~= nil and myHero:CanUseSpell(MamBWC) == READY)
+    GotoweBRK = (MamBRK ~= nil and myHero:CanUseSpell(MamBRK) == READY)
+    GotoweTMT = (MamTMT ~= nil and myHero:CanUseSpell(MamTMT) == READY)
+    GotoweRAH = (MamRAH ~= nil and myHero:CanUseSpell(MamRAH) == READY)
+    GotoweRND = (MamRND ~= nil and myHero:CanUseSpell(MamRND) == READY)
+    GotoweSTD = (MamSTD ~= nil and myHero:CanUseSpell(MamSTD) == READY)
+    GotoweIgnite = (ignite ~= nil and myHero:CanUseSpell(ignite) == READY)
+
+end
+
+
+function MoznaUzycUlti(Przeciwnik)
+    
+	for i, Przeciwnik in pairs(PrzeciwnicyTablica) do
+        if Przeciwnik.networkID == Przeciwnik.networkID then
+			if Przeciwnik.MoznaZabic == false and Przeciwnik.CzasOdpornosci < GetTickCount() then
+                Przeciwnik.MoznaZabic = true
+                Przeciwnik.CzasOdpornosci = 0
+			end
+			return Przeciwnik.MoznaZabic
+        end
+    end
+
+end
+
+
+function WartoscTarczy(Przeciwnik,spellName)
+    if spellName == "manaBarrier" then
+        return Przeciwnik.mana*0.5
+    end
+end
+
+
+function Obrazenia()
+
+
+end
+
+
+function OnDraw()
+	
+	local lazurowy = ARGB(0x00,0xFF,0xFF,0xFF)
+	local czerwony = ARGB(0x00,0xFF,0x00,0x00)
+	local jasnyzielony = ARGB(0x00,0x00,0xFF,0x00)
+	local ciemnyniebieski = ARGB(0x00,0x00,0x00,0xFF)
+	local chujowy = ARGB(0x00,0xCC,0x66,0xFF)
+	
+	if DariusUstawienia.ZasiegCzarow then
+		if myHero.dead == false then
+			if GotoweE then
+				DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegE, lazurowy)
+			else
+				DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegE, ciemnyniebieski)
+			end
+			if GotoweQ then
+				DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegZewnetrznyQ, jasnyzielony)
+				DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegWewnetrznyQ, jasnyzielony)
+			else
+				DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegZewnetrznyQ, ciemnyniebieski)
+				DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegWewnetrznyQ, ciemnyniebieski)
+			end
+			if GotoweR then
+				DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegR, czerwony)
+			else
+				DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegR, ciemnyniebieski)
+			end
+		end
+	end
+	
+	if not DariusUstawienia.ZasiegCzarow and DariusUstawienia.ZasiegKombo then
+		if myHero.dead == false and not DariusUstawienia.Kombo then
+			DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegE, czerwony)
+		elseif cel.target ~= nil and GetDistance(cel.target) <= ZasiegE then
+			DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegE, jasnyzielony)
+		else
+			DrawCircle(myHero.x, myHero.y, myHero.z, ZasiegE, lazurowy)
+		end
+	end
+	
+	if DariusUstawienia.KolaPrzeciwnicy then
+		for i, Przeciwnik in pairs(PrzeciwnicyTablica) do
+			if cel.target then
+				DrawCircle(cel.target.x, cel.target.y, cel.target.z, 125, czerwony)
+			elseif Przeciwnik.dead == false and Przeciwnik.visible then
+				DrawCircle(Przeciwnik.x, Przeciwnik.y, Przeciwnik.z, 125, jasnyzielony)
+			end
+		end
+	end
+
+end
+
+end  
