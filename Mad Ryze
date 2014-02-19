@@ -4,18 +4,23 @@ require 'FSL'
 EnemyTeam = {}
 TargetList = {}
 
-function OnLoad()
+JungleMobs = {}
 
+function OnLoad()
 	Config = scriptConfig("RyzeBot", "Ryze")
 	
 	Config:addSubMenu("Combo", "ComboConfig")
 		Config.ComboConfig:addParam("Combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
 		Config.ComboConfig:addParam("ComboUnderTower", "Combo Under Tower", SCRIPT_PARAM_ONOFF, true)
 		Config.ComboConfig:addParam("MoveToMouseCombo", "Move To Mouse while Combo", SCRIPT_PARAM_ONOFF, true)
+		Config.ComboConfig:addParam("RCombo", "Use R in Combo", SCRIPT_PARAM_ONOFF, true)
 	
 	-- Harass
 	Config:addSubMenu("Auto Harass", "AutoHarass")
 		Config.AutoHarass:addParam("Harass", "Harass", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte('Z'))
+		Config.AutoHarass:addParam("QHarass", "Use Q to Harass", SCRIPT_PARAM_ONOFF, true)
+		Config.AutoHarass:addParam("WHarass", "Use W to Harass", SCRIPT_PARAM_ONOFF, true)
+		Config.AutoHarass:addParam("EHarass", "Use E to Harass", SCRIPT_PARAM_ONOFF, true)
 		Config.AutoHarass:addParam("HarassUnderTower", "Harass Under Tower", SCRIPT_PARAM_ONOFF, false)
 		Config.AutoHarass:addParam("MinManaToHarass","Min Mana To Harass %", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
 	
@@ -29,6 +34,15 @@ function OnLoad()
 		Config.Farm:addParam("Info"," ", SCRIPT_PARAM_INFO, "")
 		Config.Farm:addParam("AAFarm", "AA Farm", SCRIPT_PARAM_ONKEYDOWN, false, string.byte('C'))
 	
+	-- Jungle Clear
+	Config:addSubMenu("Jungle", "Jungle")
+		Config.Jungle:addParam("JungleClear", "Jungle Clear", SCRIPT_PARAM_ONKEYDOWN, false, string.byte('V'))
+		Config.Jungle:addParam("QJungle", "Use Q Jungle Clear", SCRIPT_PARAM_ONOFF, true)
+		Config.Jungle:addParam("WJungle", "Use W Jungle Clear", SCRIPT_PARAM_ONOFF, false)
+		Config.Jungle:addParam("EJungle", "Use E Jungle Clear", SCRIPT_PARAM_ONOFF, true)
+	-- Misc
+	Config:addSubMenu("Misc Options", "MiscOptions")
+		Config.MiscOptions:addParam("Ignite", "Auto ignite", SCRIPT_PARAM_ONOFF, true)
 	-- Draw 
 	Config:addSubMenu("Draw Options", "DrawOptions")
 		Config.DrawOptions:addParam("Info"," ", SCRIPT_PARAM_INFO, "")
@@ -58,6 +72,8 @@ function OnLoad()
 	
 	
 	AutoFarm = FSLAutoFarm(20, 600)
+	OverLoadPackets()
+	LoadJungle()
 end
 
 function OnTick()
@@ -69,31 +85,35 @@ function OnTick()
 	AutoFarm:Update()
 	ts:update()
 	
-	Target = ts.target
+	EnemyTarget = ts.target
 	
 	if Config.ComboConfig.Combo then
-		if Target ~= nil then
+		if EnemyTarget ~= nil then
 			if Config.ComboConfig.ComboUnderTower == false then
 				if Turrets:UnderTurret(myHero, not myHero.team) == false then
-					Combo(Target)
+					Combo(EnemyTarget)
 				end
 			else
-				Combo(Target)
+				Combo(EnemyTarget)
 			end
 		end
 		if Config.ComboConfig.MoveToMouseCombo then
-			myHero:MoveTo(mousePos.x, mousePos.z)
+			if VIP_USER then
+				Packet('S_MOVE', {type = 2, x = mousePos.x, y = mousePos.z}):send()
+			else
+				myHero:MoveTo(mousePos.x, mousePos.z)
+			end
 		end
 	end
 	
 	if Config.AutoHarass.Harass and myHero.mana/myHero.maxMana*100 >= Config.AutoHarass.MinManaToHarass and not Config.ComboConfig.Combo then
-		if Target ~= nil then
+		if EnemyTarget ~= nil then
 			if Config.AutoHarass.HarassUnderTower == false then
 				if Turrets:UnderTurret(myHero, not myHero.team) == false then
-					Harass(Target)
+					Harass(EnemyTarget)
 				end
 			else
-				Harass(Target)
+				Harass(EnemyTarget)
 			end
 		end
 	end
@@ -102,8 +122,17 @@ function OnTick()
 		AutoFarm:SpellsFarm(SpellQ, Config.Farm.QFarm, SpellW, Config.Farm.WFarm, SpellE, Config.Farm.EFarm)
 	end
 	
-	if Config.Farm.AAFarm and not Config.Combo then
+	if Config.Farm.AAFarm and not Config.ComboConfig.Combo then
 		AutoFarm:AAFarm()
+	end
+	
+	if Config.Jungle.JungleClear and not Config.ComboConfig.Combo then
+		JungleClear()
+		if VIP_USER then
+			Packet('S_MOVE', {type = 2, x = mousePos.x, y = mousePos.z}):send()
+		else
+			myHero:MoveTo(mousePos.x, mousePos.z)
+		end
 	end
 	
 	
@@ -137,22 +166,179 @@ function OnDraw()
 	
 end
 
+function OnCreateObj(obj)
+	if obj ~= nil and obj.type == "obj_AI_Minion" and obj.name ~= nil then
+		if obj.name == "AncientGolem1.1.1" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "GiantWolf2.1.1" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "Wraith3.1.1" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "LizardElder4.1.1" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "Golem5.1.2" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "AncientGolem7.1.1" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "Wraith9.1.1" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "LizardElder10.1.1" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "Golem11.1.2" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "Dragon6.1.1" then
+			JungleMobs[obj.name] = obj
+		end
+		if obj.name == "Worm12.1.1" then
+			JungleMobs[obj.name] = obj
+		end	
+	end
+end
+
+function OnDeleteObj(obj)
+	if obj ~= nil and obj.name ~= nil then
+		if obj.name == "AncientGolem1.1.1" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "GiantWolf2.1.1" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "Wraith3.1.1" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "LizardElder4.1.1" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "Golem5.1.2" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "AncientGolem7.1.1" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "Wraith9.1.1" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "LizardElder10.1.1" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "Golem11.1.2" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "Dragon6.1.1" then
+			JungleMobs[obj.name] = nil
+		end
+		if obj.name == "Worm12.1.1" then
+			JungleMobs[obj.name] = nil
+		end	
+	end
+end
+
+
 function Combo(Target)
-	if Get2dDistance(Target, myHero) < 550 then
+	if Target ~= nil and Get2dDistance(Target, myHero) < 550 then
 		SpellQ:CastSpellOnTarget(Target)
-		SpellR:CastSpell(myHero)
+		if Config.ComboConfig.RCombo then
+			SpellR:CastSpell(Target)
+		end
 		SpellW:CastSpellOnTarget(Target)
 		SpellE:CastSpellOnTarget(Target)
-	elseif Get2dDistance(Target, myHero) < 600 then
+	elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
 		SpellW:CastSpellOnTarget(Target)
-		SpellR:CastSpell(myHero)
+		if Config.ComboConfig.RCombo then
+			SpellR:CastSpell(Target)
+		end
 		SpellQ:CastSpellOnTarget(Target)
 		SpellE:CastSpellOnTarget(Target)
 	end
-	
 end
 
 function Harass(Target)
-	SpellQ:CastSpellOnTarget(Target)
-	SpellE:CastSpellOnTarget(Target)
+	if Get2dDistance(Target, myHero) < 550 then
+		if Config.AutoHarass.QHarass then
+			SpellQ:CastSpellOnTarget(Target)
+		end
+		if Config.AutoHarass.WHarass then
+			SpellW:CastSpellOnTarget(Target)
+		end
+		if Config.AutoHarass.EHarass then
+			SpellE:CastSpellOnTarget(Target)
+		end
+	elseif Get2dDistance(Target, myHero) < 650 then
+		if Config.AutoHarass.WHarass then
+			SpellW:CastSpellOnTarget(Target)
+		end
+		if Config.AutoHarass.QHarass then
+			SpellQ:CastSpellOnTarget(Target)
+		end
+		if Config.AutoHarass.EHarass then
+			SpellE:CastSpellOnTarget(Target)
+		end
+	end
+end
+
+function JungleClear()
+	for Name, Monser in pairs(JungleMobs) do
+		if JungleMobs[Name] ~= nil and not JungleMobs[Name].dead and Get2dDistance(JungleMobs[Name], myHero) < 600 then
+			if Config.Jungle.QJungle then
+				SpellQ:CastSpellOnTarget(JungleMobs[Name])
+			end
+			if Config.Jungle.WJungle then
+				SpellW:CastSpellOnTarget(JungleMobs[Name])
+			end
+			if Config.Jungle.EJungle then
+				SpellE:CastSpellOnTarget(JungleMobs[Name])
+			end
+		end
+	end
+end
+
+function LoadJungle()
+	 for i = 1, objManager.maxObjects do
+		local obj = objManager:getObject(i)
+			if obj ~= nil and obj.type == "obj_AI_Minion" and obj.name ~= nil then
+						if obj.name == "AncientGolem1.1.1" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "GiantWolf2.1.1" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "Wraith3.1.1" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "LizardElder4.1.1" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "Golem5.1.2" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "AncientGolem7.1.1" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "Wraith9.1.1" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "LizardElder10.1.1" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "Golem11.1.2" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "Dragon6.1.1" then
+				JungleMobs[obj.name] = obj
+			end
+			if obj.name == "Worm12.1.1" then
+				JungleMobs[obj.name] = obj
+			end	
+		end
+	end
+
 end
