@@ -41,8 +41,8 @@ function OnLoad()
 		Config.Jungle:addParam("WJungle", "Use W Jungle Clear", SCRIPT_PARAM_ONOFF, false)
 		Config.Jungle:addParam("EJungle", "Use E Jungle Clear", SCRIPT_PARAM_ONOFF, true)
 	-- Misc
-	Config:addSubMenu("Misc Options", "MiscOptions")
-		Config.MiscOptions:addParam("Ignite", "Auto ignite", SCRIPT_PARAM_ONOFF, true)
+	--Config:addSubMenu("Misc Options", "MiscOptions")
+	--	Config.MiscOptions:addParam("Ignite", "Auto ignite", SCRIPT_PARAM_ONOFF, true)
 	-- Draw 
 	Config:addSubMenu("Draw Options", "DrawOptions")
 		Config.DrawOptions:addParam("Info"," ", SCRIPT_PARAM_INFO, "")
