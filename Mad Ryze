@@ -1,9 +1,6 @@
 if myHero.charName ~= "Ryze" then return end
 require 'FSL'
 
-EnemyTeam = {}
-TargetList = {}
-
 JungleMobs = {}
 
 function OnLoad()
@@ -17,7 +14,9 @@ function OnLoad()
 	
 	-- Harass
 	Config:addSubMenu("Auto Harass", "AutoHarass")
-		Config.AutoHarass:addParam("Harass", "Harass", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte('Z'))
+		Config.AutoHarass:addParam("AutoHarass", "Auto Harass", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte('Z'))
+		Config.AutoHarass:addParam("OnKeyDownHarass", "On Key Down Harass", SCRIPT_PARAM_ONKEYDOWN, false, string.byte('T'))
+		Config.AutoHarass:addParam("MoveToMouseHarass", "Move To Mouse while Harass", SCRIPT_PARAM_ONOFF, true)
 		Config.AutoHarass:addParam("QHarass", "Use Q to Harass", SCRIPT_PARAM_ONOFF, true)
 		Config.AutoHarass:addParam("WHarass", "Use W to Harass", SCRIPT_PARAM_ONOFF, true)
 		Config.AutoHarass:addParam("EHarass", "Use E to Harass", SCRIPT_PARAM_ONOFF, true)
@@ -41,7 +40,8 @@ function OnLoad()
 		Config.Jungle:addParam("WJungle", "Use W Jungle Clear", SCRIPT_PARAM_ONOFF, false)
 		Config.Jungle:addParam("EJungle", "Use E Jungle Clear", SCRIPT_PARAM_ONOFF, true)
 	-- Misc
-	--Config:addSubMenu("Misc Options", "MiscOptions")
+	Config:addSubMenu("Misc Options", "MiscOptions")
+	Config.MiscOptions:addParam("BlockScript", "Block Script", SCRIPT_PARAM_ONKEYDOWN, false, string.byte('C'))
 	--	Config.MiscOptions:addParam("Ignite", "Auto ignite", SCRIPT_PARAM_ONOFF, true)
 	-- Draw 
 	Config:addSubMenu("Draw Options", "DrawOptions")
@@ -86,18 +86,55 @@ function OnTick()
 	ts:update()
 	
 	EnemyTarget = ts.target
-	
-	if Config.ComboConfig.Combo then
-		if EnemyTarget ~= nil then
-			if Config.ComboConfig.ComboUnderTower == false then
-				if Turrets:UnderTurret(myHero, not myHero.team) == false then
+	if not Config.MiscOptions.BlockScript then
+		if Config.ComboConfig.Combo then
+			if EnemyTarget ~= nil then
+				if Config.ComboConfig.ComboUnderTower == false then
+					if Turrets:UnderTurret(myHero, not myHero.team) == false then
+						Combo(EnemyTarget)
+					end
+				else
 					Combo(EnemyTarget)
 				end
-			else
-				Combo(EnemyTarget)
+			end
+			if Config.ComboConfig.MoveToMouseCombo then
+				if VIP_USER then
+					Packet('S_MOVE', {type = 2, x = mousePos.x, y = mousePos.z}):send()
+				else
+					myHero:MoveTo(mousePos.x, mousePos.z)
+				end
 			end
 		end
-		if Config.ComboConfig.MoveToMouseCombo then
+		
+		if (Config.AutoHarass.AutoHarass or Config.AutoHarass.OnKeyDownHarass) and myHero.mana/myHero.maxMana*100 >= Config.AutoHarass.MinManaToHarass and not Config.ComboConfig.Combo then
+			if EnemyTarget ~= nil then
+				if Config.AutoHarass.HarassUnderTower == false then
+					if Turrets:UnderTurret(myHero, not myHero.team) == false then
+						Harass(EnemyTarget)
+					end
+				else
+					Harass(EnemyTarget)
+				end
+			end
+			if Config.AutoHarass.OnKeyDownHarass and Config.AutoHarass.MoveToMouseHarass then
+				if VIP_USER then
+					Packet('S_MOVE', {type = 2, x = mousePos.x, y = mousePos.z}):send()
+				else
+					myHero:MoveTo(mousePos.x, mousePos.z)
+				end
+			end
+		end
+		
+		if Config.Farm.SpellFarm and myHero.mana/myHero.maxMana*100 >= Config.Farm.MinManaToFarm and not Config.ComboConfig.Combo then
+			AutoFarm:SpellsFarm(SpellQ, Config.Farm.QFarm, SpellW, Config.Farm.WFarm, SpellE, Config.Farm.EFarm)
+		end
+		
+		if Config.Farm.AAFarm and not Config.ComboConfig.Combo then
+			AutoFarm:AAFarm()
+		end
+		
+		if Config.Jungle.JungleClear and not Config.ComboConfig.Combo then
+			JungleClear()
 			if VIP_USER then
 				Packet('S_MOVE', {type = 2, x = mousePos.x, y = mousePos.z}):send()
 			else
@@ -105,37 +142,6 @@ function OnTick()
 			end
 		end
 	end
-	
-	if Config.AutoHarass.Harass and myHero.mana/myHero.maxMana*100 >= Config.AutoHarass.MinManaToHarass and not Config.ComboConfig.Combo then
-		if EnemyTarget ~= nil then
-			if Config.AutoHarass.HarassUnderTower == false then
-				if Turrets:UnderTurret(myHero, not myHero.team) == false then
-					Harass(EnemyTarget)
-				end
-			else
-				Harass(EnemyTarget)
-			end
-		end
-	end
-	
-	if Config.Farm.SpellFarm and myHero.mana/myHero.maxMana*100 >= Config.Farm.MinManaToFarm and not Config.ComboConfig.Combo then
-		AutoFarm:SpellsFarm(SpellQ, Config.Farm.QFarm, SpellW, Config.Farm.WFarm, SpellE, Config.Farm.EFarm)
-	end
-	
-	if Config.Farm.AAFarm and not Config.ComboConfig.Combo then
-		AutoFarm:AAFarm()
-	end
-	
-	if Config.Jungle.JungleClear and not Config.ComboConfig.Combo then
-		JungleClear()
-		if VIP_USER then
-			Packet('S_MOVE', {type = 2, x = mousePos.x, y = mousePos.z}):send()
-		else
-			myHero:MoveTo(mousePos.x, mousePos.z)
-		end
-	end
-	
-	
 end
 
 
