@@ -41,7 +41,8 @@ function OnLoad()
 		Config.Jungle:addParam("EJungle", "Use E Jungle Clear", SCRIPT_PARAM_ONOFF, true)
 	-- Misc
 	Config:addSubMenu("Misc Options", "MiscOptions")
-	Config.MiscOptions:addParam("BlockScript", "Block Script", SCRIPT_PARAM_ONKEYDOWN, false, string.byte('G'))
+		Config.MiscOptions:addParam("BlockScript", "Block Script", SCRIPT_PARAM_ONKEYDOWN, false, string.byte('G'))
+		Config.MiscOptions:addParam("UseExpolit", "Use Expolit (Vip)", SCRIPT_PARAM_ONOFF, true)
 	--	Config.MiscOptions:addParam("Ignite", "Auto ignite", SCRIPT_PARAM_ONOFF, true)
 	-- Draw 
 	Config:addSubMenu("Draw Options", "DrawOptions")
@@ -84,7 +85,7 @@ function OnTick()
 	Turrets:Update()
 	AutoFarm:Update()
 	ts:update()
-	
+
 	EnemyTarget = ts.target
 	if not Config.MiscOptions.BlockScript then
 		if Config.ComboConfig.Combo then
@@ -250,43 +251,61 @@ end
 
 
 function Combo(Target)
-	if Target ~= nil and Get2dDistance(Target, myHero) < 550 then
-		SpellQ:CastSpellOnTarget(Target)
-		if Config.ComboConfig.RCombo then
-			SpellR:CastSpell(Target)
+	if Config.MiscOptions.UseExpolit then
+		if Target ~= nil and Get2dDistance(Target, myHero) < 550 then
+			SpellQ:CastSpellOnTarget(Target)
+			if Config.ComboConfig.RCombo then
+				SpellR:CastSpell(Target)
+			end
+			SpellW:CastSpellOnTarget(Target)
+			SpellE:CastSpellOnTarget(Target)
+		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
+			SpellW:CastSpellOnTarget(Target)
+			if Config.ComboConfig.RCombo then
+				SpellR:CastSpell(Target)
+			end
+			SpellQ:CastSpellOnTarget(Target)
+			SpellE:CastSpellOnTarget(Target)
 		end
-		SpellW:CastSpellOnTarget(Target)
-		SpellE:CastSpellOnTarget(Target)
-	elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
-		SpellW:CastSpellOnTarget(Target)
-		if Config.ComboConfig.RCombo then
-			SpellR:CastSpell(Target)
+	else
+		if Target ~= nil and Get2dDistance(Target, myHero) < 550 then
+			CastSpell(_Q, Target)
+			if Config.ComboConfig.RCombo then
+				CastSpell(_R, Target)
+			end
+			CastSpell(_W, Target)
+			CastSpell(_E, Target)
+		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
+			CastSpell(_W, Target)
+			if Config.ComboConfig.RCombo then
+				CastSpell(_R, Target)
+			end
+			CastSpell(_Q, Target)
+			CastSpell(_E, Target)
 		end
-		SpellQ:CastSpellOnTarget(Target)
-		SpellE:CastSpellOnTarget(Target)
 	end
 end
 
 function Harass(Target)
-	if Get2dDistance(Target, myHero) < 550 then
-		if Config.AutoHarass.QHarass then
+	if Config.MiscOptions.UseExpolit then
+		if Target ~= nil and Get2dDistance(Target, myHero) < 550 then
 			SpellQ:CastSpellOnTarget(Target)
-		end
-		if Config.AutoHarass.WHarass then
 			SpellW:CastSpellOnTarget(Target)
-		end
-		if Config.AutoHarass.EHarass then
+			SpellE:CastSpellOnTarget(Target)
+		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
+			SpellW:CastSpellOnTarget(Target)
+			SpellQ:CastSpellOnTarget(Target)
 			SpellE:CastSpellOnTarget(Target)
 		end
-	elseif Get2dDistance(Target, myHero) < 650 then
-		if Config.AutoHarass.WHarass then
-			SpellW:CastSpellOnTarget(Target)
-		end
-		if Config.AutoHarass.QHarass then
-			SpellQ:CastSpellOnTarget(Target)
-		end
-		if Config.AutoHarass.EHarass then
-			SpellE:CastSpellOnTarget(Target)
+	else
+		if Target ~= nil and Get2dDistance(Target, myHero) < 550 then
+			CastSpell(_Q, Target)
+			CastSpell(_W, Target)
+			CastSpell(_E, Target)
+		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
+			CastSpell(_W, Target)
+			CastSpell(_Q, Target)
+			CastSpell(_E, Target)
 		end
 	end
 end
