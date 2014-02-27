@@ -7,6 +7,7 @@ function OnLoad()
 	Config = scriptConfig("RyzeBot", "Ryze")
 	
 	Config:addSubMenu("Combo", "ComboConfig")
+		Config.ComboConfig:addParam("ComboRange","Combo Range", SCRIPT_PARAM_SLICE, 625, 600, 625, 0)
 		Config.ComboConfig:addParam("Combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
 		Config.ComboConfig:addParam("ComboUnderTower", "Combo Under Tower", SCRIPT_PARAM_ONOFF, true)
 		Config.ComboConfig:addParam("MoveToMouseCombo", "Move To Mouse while Combo", SCRIPT_PARAM_ONOFF, true)
@@ -72,7 +73,7 @@ function OnLoad()
 	Me = FSLMyHero()
 	
 	
-	AutoFarm = FSLAutoFarm(20, 600)
+	AutoFarm = FSLAutoFarm(20, 625)
 	OverLoadPackets()
 	LoadJungle()
 end
@@ -98,13 +99,11 @@ function OnTick()
 					Combo(EnemyTarget)
 				end
 			end
-			if Config.ComboConfig.MoveToMouseCombo then
 				if VIP_USER then
-					Packet('S_MOVE', {type = 2, x = mousePos.x, y = mousePos.z}):send()
+					SendPacketMove(FSL_MOVE, mousePos.x, mousePos.z)
 				else
 					myHero:MoveTo(mousePos.x, mousePos.z)
 				end
-			end
 		end
 		
 		if (Config.AutoHarass.AutoHarass or Config.AutoHarass.OnKeyDownHarass) and myHero.mana/myHero.maxMana*100 >= Config.AutoHarass.MinManaToHarass and not Config.ComboConfig.Combo then
@@ -119,7 +118,7 @@ function OnTick()
 			end
 			if Config.AutoHarass.OnKeyDownHarass and Config.AutoHarass.MoveToMouseHarass then
 				if VIP_USER then
-					Packet('S_MOVE', {type = 2, x = mousePos.x, y = mousePos.z}):send()
+					SendPacketMove(FSL_MOVE, mousePos.x, mousePos.z)
 				else
 					myHero:MoveTo(mousePos.x, mousePos.z)
 				end
@@ -137,7 +136,7 @@ function OnTick()
 		if Config.Jungle.JungleClear and not Config.ComboConfig.Combo then
 			JungleClear()
 			if VIP_USER then
-				Packet('S_MOVE', {type = 2, x = mousePos.x, y = mousePos.z}):send()
+				SendPacketMove(FSL_MOVE, mousePos.x, mousePos.z)
 			else
 				myHero:MoveTo(mousePos.x, mousePos.z)
 			end
@@ -145,10 +144,9 @@ function OnTick()
 	end
 end
 
-
 function OnDraw()
 	if Config.DrawOptions.DrawComboRange then
-		SpellQ:DrawRange()
+		DrawCircle(myHero.x, myHero.y, myHero.z, Config.ComboConfig.ComboRange, ColorTable.Lime)
 	end
 	
 	if Config.DrawOptions.DrawEnemyBox then
@@ -259,7 +257,7 @@ function Combo(Target)
 			end
 			SpellW:CastSpellOnTarget(Target)
 			SpellE:CastSpellOnTarget(Target)
-		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
+		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < Config.ComboConfig.ComboRange then
 			SpellW:CastSpellOnTarget(Target)
 			if Config.ComboConfig.RCombo then
 				SpellR:CastSpell(Target)
@@ -275,7 +273,7 @@ function Combo(Target)
 			end
 			CastSpell(_W, Target)
 			CastSpell(_E, Target)
-		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
+		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < Config.ComboConfig.ComboRange then
 			CastSpell(_W, Target)
 			if Config.ComboConfig.RCombo then
 				CastSpell(_R, Target)
@@ -292,7 +290,7 @@ function Harass(Target)
 			SpellQ:CastSpellOnTarget(Target)
 			SpellW:CastSpellOnTarget(Target)
 			SpellE:CastSpellOnTarget(Target)
-		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
+		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < SpellQ.Spell.Range then
 			SpellW:CastSpellOnTarget(Target)
 			SpellQ:CastSpellOnTarget(Target)
 			SpellE:CastSpellOnTarget(Target)
@@ -302,7 +300,7 @@ function Harass(Target)
 			CastSpell(_Q, Target)
 			CastSpell(_W, Target)
 			CastSpell(_E, Target)
-		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < 600 then
+		elseif  Target ~= nil and  Get2dDistance(Target, myHero) < SpellQ.Spell.Range then
 			CastSpell(_W, Target)
 			CastSpell(_Q, Target)
 			CastSpell(_E, Target)
@@ -312,7 +310,7 @@ end
 
 function JungleClear()
 	for Name, Monser in pairs(JungleMobs) do
-		if JungleMobs[Name] ~= nil and not JungleMobs[Name].dead and Get2dDistance(JungleMobs[Name], myHero) < 600 then
+		if JungleMobs[Name] ~= nil and not JungleMobs[Name].dead and Get2dDistance(JungleMobs[Name], myHero) < SpellQ.Spell.Range then
 			if Config.Jungle.QJungle then
 				SpellQ:CastSpellOnTarget(JungleMobs[Name])
 			end
