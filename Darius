@@ -232,7 +232,7 @@ function AutomatyczneKradniecieZabujst()
 		
 		for i = 1, Przeciwnik.buffCount, 1 do
 			local buff = Przeciwnik:getBuff(i)
-			if buff.name == "willrevive" and buff.startT<=GetGameTimer() and buff.endT>=GetGameTimer() then then
+			if buff.name == "willrevive" and buff.startT<=GetGameTimer() and buff.endT>=GetGameTimer() then
 			Przeciwnik.OdrodziSie = true
 			else
 			Przeciwnik.OdrodziSie = false
