@@ -92,7 +92,7 @@ function OnLoad()
 	DariusUstawienia:addParam("MamHavoc", "Added point in Havoc", SCRIPT_PARAM_ONOFF, false)
 	DariusUstawienia:addParam("MamExecutioner", "Added 3 points in Executioner", SCRIPT_PARAM_ONOFF, false)
 	DariusUstawienia:addParam("MamDoubleEdgedSword", "Added point in DoubleEdgedSword", SCRIPT_PARAM_ONOFF, false)
-	DariusUstawienia:addParam("OdejmijObrazenia","Subtract dmg in ks mode",SCRIPT_PARAM_SLICE, 10, 0, 30, 0)
+	DariusUstawienia:addParam("OdejmijObrazenia","Subtract dmg in ks mode",SCRIPT_PARAM_SLICE, 10, 0, 60, 0)
 	DariusUstawienia:addParam("Stream", "Stream Mode", SCRIPT_PARAM_ONOFF, false)
 	DariusUstawienia:addParam("ZasiegCzarow", "Draw Spell Range", SCRIPT_PARAM_ONOFF, true)
 	DariusUstawienia:addParam("ZasiegKombo", "Draw Combo Range", SCRIPT_PARAM_ONOFF, true)
@@ -122,6 +122,7 @@ function OnLoad()
 			Przeciwnik.MoznaZabic = true
             Przeciwnik.CzasOdpornosci = 0
             Przeciwnik.Tarcza = 0
+			Przeciwnik.OdrodziSie = false
 			table.insert(PrzeciwnicyTablica,Przeciwnik)
 			for i=1, #SprawdzCzyMoznaUzycUlti, 1 do
                 if SprawdzCzyMoznaUzycUlti[i].name == Przeciwnik.charName then
@@ -229,9 +230,19 @@ function AutomatyczneKradniecieZabujst()
 			PrintFloatText(Przeciwnik,0,"" .. math.ceil(Przeciwnik.health - ObrazeniaR) .. " HP - " .. Przeciwnik.IloscHemorrhage)
 		end
 		
+		for i = 1, Przeciwnik.buffCount, 1 do
+			local buff = Przeciwnik:getBuff(i)
+			if buff.name == "willrevive" and buff.startT<=GetGameTimer() and buff.endT>=GetGameTimer() then then
+			Przeciwnik.OdrodziSie = true
+			else
+			Przeciwnik.OdrodziSie = false
+		end
+		
 		if not Przeciwnik.dead and GetDistance(Przeciwnik) < 3000 and Przeciwnik.health < ObrazeniaR then
 			if MoznaUzycUlti(Przeciwnik) == false then
 				PrintFloatText(Przeciwnik,0,"IMMUNE")
+			elseif Przeciwnik.OdrodziSie then
+				PrintFloatText(Przeciwnik,0,"Will Revive")
 			elseif MoznaUzycUlti(Przeciwnik) == true then
 				PrintFloatText(Przeciwnik,21,"Dunk")
 				PrintFloatText(Przeciwnik,0,"Dunk")         
@@ -244,7 +255,8 @@ function AutomatyczneKradniecieZabujst()
 			CastSpell(_Q)
 		end
 		
-		if DariusUstawienia.AutoUlt and GotoweR and Przeciwnik.team ~= myHero.team and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaR and MoznaUzycUlti(Przeciwnik) == true and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik ~= nil then
+
+		if DariusUstawienia.AutoUlt and GotoweR and Przeciwnik.team ~= myHero.team and not Przeciwnik.isRevealSpecificUnit and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaR and MoznaUzycUlti(Przeciwnik) == true and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik ~= nil then
 			CastSpell(_R, Przeciwnik)
 		end
 	end
