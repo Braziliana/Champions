@@ -86,7 +86,7 @@ function OnLoad()
 	--DariusUstawienia:addParam("Farmienie", "Auto Farm", SCRIPT_PARAM_ONKEYDOWN, false, 65)
 	DariusUstawienia:addParam("MocneObijanie","Perfect Harass", SCRIPT_PARAM_ONKEYTOGGLE, false, 90)
 	DariusUstawienia:addParam("Obijanie","Harass", SCRIPT_PARAM_ONKEYTOGGLE, false, 88)
-	DariusUstawienia:addParam("AutoUlt", "Auto Dunk To KS", SCRIPT_PARAM_ONOFF, true)
+	DariusUstawienia:addParam("AutoUlt", "Auto Dunk To KS", SCRIPT_PARAM_ONKEYTOGGLE, true, string.byte('C') )
 	DariusUstawienia:addParam("AutomatycznyIgnite", "Ignite when Killable", SCRIPT_PARAM_ONOFF, true)
 	DariusUstawienia:addParam("IdzDoMyszki", "Move to mouse", SCRIPT_PARAM_ONOFF, true)
 	DariusUstawienia:addParam("MamHavoc", "Added point in Havoc", SCRIPT_PARAM_ONOFF, false)
@@ -233,9 +233,9 @@ function AutomatyczneKradniecieZabujst()
 		for i = 1, Przeciwnik.buffCount, 1 do
 			local buff = Przeciwnik:getBuff(i)
 			if buff.name == "willrevive" and buff.startT<=GetGameTimer() and buff.endT>=GetGameTimer() then
-				Przeciwnik.OdrodziSie = true
+			Przeciwnik.OdrodziSie = true
 			else
-				Przeciwnik.OdrodziSie = false
+			Przeciwnik.OdrodziSie = false
 			end
 		end
 		
@@ -257,7 +257,7 @@ function AutomatyczneKradniecieZabujst()
 		end
 		
 
-		if DariusUstawienia.AutoUlt and GotoweR and Przeciwnik.team ~= myHero.team  and not Przeciwnik.OdrodziSie and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaR and MoznaUzycUlti(Przeciwnik) == true and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik ~= nil then
+		if DariusUstawienia.AutoUlt and GotoweR and Przeciwnik.team ~= myHero.team and not Przeciwnik.OdrodziSie and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaR and MoznaUzycUlti(Przeciwnik) == true and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik ~= nil then
 			CastSpell(_R, Przeciwnik)
 		end
 	end
