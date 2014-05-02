@@ -7,11 +7,11 @@ local PrzeciwnicyTablica = {}
 local PrzeciwneMiniony = {}
 
 local HemorrhageTablica ={
-    [1] = "darius_hemo_counter_01.troy",
-    [2] = "darius_hemo_counter_02.troy",
-    [3] = "darius_hemo_counter_03.troy",
-    [4] = "darius_hemo_counter_04.troy",
-    [5] = "darius_hemo_counter_05.troy",
+    [1] = "darius_Base_hemo_counter_01.troy",
+    [2] = "darius_Base_hemo_counter_02.troy",
+    [3] = "darius_Base_hemo_counter_03.troy",
+    [4] = "darius_Base_hemo_counter_04.troy",
+    [5] = "darius_Base_hemo_counter_05.troy",
 }
 
 local SprawdzCzyMoznaUzycUlti = {
@@ -252,7 +252,7 @@ end
 
 
 function OnCreateObj(obj)
-	
+
 	for i=1, #SprawdzCzyMoznaUzycUlti, 1 do
         if string.find(string.lower(obj.name),SprawdzCzyMoznaUzycUlti[i].spellParticle) and SprawdzCzyMoznaUzycUlti[i].enabled == true then
             for i, Przeciwnik in pairs(PrzeciwnicyTablica) do
@@ -269,7 +269,7 @@ function OnCreateObj(obj)
     end
 
 
-    if string.find(string.lower(obj.name),"darius_hemo_counter") then
+    if string.find(obj.name,"darius_Base_hemo_counter_") then
         for i, Przeciwnik in pairs(PrzeciwnicyTablica) do
             if Przeciwnik and not Przeciwnik.dead and Przeciwnik.visible and  GetDistance(Przeciwnik, obj) <= 80 then
 				for j, Hemorrhage in pairs(HemorrhageTablica) do
