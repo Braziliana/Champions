@@ -86,6 +86,7 @@ function OnLoad()
 	--DariusUstawienia:addParam("Farmienie", "Auto Farm", SCRIPT_PARAM_ONKEYDOWN, false, 65)
 	DariusUstawienia:addParam("MocneObijanie","Perfect Harass", SCRIPT_PARAM_ONKEYTOGGLE, false, 90)
 	DariusUstawienia:addParam("Obijanie","Harass", SCRIPT_PARAM_ONKEYTOGGLE, false, 88)
+	DariusUstawienia:addParam("AutoUlt", "Auto Dunk To KS", SCRIPT_PARAM_ONOFF, true)
 	DariusUstawienia:addParam("AutomatycznyIgnite", "Ignite when Killable", SCRIPT_PARAM_ONOFF, true)
 	DariusUstawienia:addParam("IdzDoMyszki", "Move to mouse", SCRIPT_PARAM_ONOFF, true)
 	DariusUstawienia:addParam("MamHavoc", "Added point in Havoc", SCRIPT_PARAM_ONOFF, false)
@@ -243,7 +244,7 @@ function AutomatyczneKradniecieZabujst()
 			CastSpell(_Q)
 		end
 		
-		if GotoweR and Przeciwnik.team ~= myHero.team and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaR and MoznaUzycUlti(Przeciwnik) == true and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik ~= nil then
+		if DariusUstawienia.AutoUlt and GotoweR and Przeciwnik.team ~= myHero.team and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaR and MoznaUzycUlti(Przeciwnik) == true and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik ~= nil then
 			CastSpell(_R, Przeciwnik)
 		end
 	end
@@ -447,7 +448,7 @@ end
 
 function MocneObijanie()
 
-	if GotoweQ and GetDistance(cel.target) <= ZasiegZewnetrznyQ and GetDistance(cel.target) > ZasiegWewnetrznyQ  then
+	if GotoweQ and GetDistance(cel.target) <= ZasiegZewnetrznyQ and GetDistance(cel.target) > ZasiegWewnetrznyQ and cel.target.visible and not cel.target.dead then
 		CastSpell(_Q)
 	end
 end
@@ -455,7 +456,7 @@ end
 
 function Obijanie()
 
-	if GotoweQ and GetDistance(cel.target) <= ZasiegZewnetrznyQ  then
+	if GotoweQ and GetDistance(cel.target) <= ZasiegZewnetrznyQ and cel.target.visible and not cel.target.dead  then
 		CastSpell(_Q)
 	end
 end
