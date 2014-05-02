@@ -256,7 +256,7 @@ function AutomatyczneKradniecieZabujst()
 		end
 		
 
-		if DariusUstawienia.AutoUlt and GotoweR and Przeciwnik.team ~= myHero.team and not Przeciwnik.isRevealSpecificUnit and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaR and MoznaUzycUlti(Przeciwnik) == true and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik ~= nil then
+		if DariusUstawienia.AutoUlt and GotoweR and Przeciwnik.team ~= myHero.team and not Przeciwnik.isRevealSpecificUnit and not Przeciwnik.OdrodziSie and not Przeciwnik.dead and Przeciwnik.health < ObrazeniaR and MoznaUzycUlti(Przeciwnik) == true and GetDistance(Przeciwnik) <= ZasiegR and Przeciwnik ~= nil then
 			CastSpell(_R, Przeciwnik)
 		end
 	end
