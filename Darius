@@ -15,7 +15,7 @@ local HemorrhageTablica ={
 }
 
 local SprawdzCzyMoznaUzycUlti = {
-    {name="Tryndamere", spellName="undyingRage", enabled=false, spellType=0, spellLevel=1, duration=5000, spellParticle="undyingrage_glow"},
+    {name="Tryndamere", spellName="undyingRage", enabled=false, spellType=0, spellLevel=1, duration=5000, spellParticle="UndyingRage_glow.troy"},
     {name="Kayle", spellName="eyeForEye", enabled=false, spellType=0, spellLevel=1, duration=3000, spellParticle="eyeforaneye"},
     {name="Zilean", spellName="nickOfTime", enabled=false, spellType=0, spellLevel=1, duration=7000, spellParticle="nickoftime_tar"},
     {name="Nocturne", spellName="shroudOfDarkness", enabled=false, spellType=0, spellLevel=1,duration=1500,spellParticle="nocturne_shroudofdarkness_shield_cas_02"},
