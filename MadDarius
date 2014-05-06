@@ -67,6 +67,10 @@ local HemoTable = {
 [5] = "darius_Base_hemo_counter_05.troy"
 }
 
+local ProtectingSpells = {
+
+}
+
 local ColorTable = {
 	Black = ARGB(0x00,0x00,0x00,0x00),
 	Silver = ARGB(0x00,0xC0,0xC0,0xC0),
@@ -507,9 +511,9 @@ end
 function KillSteal()
 	for i, Enemy in pairs(EnemyTable) do
 		
-		if Enemy.HemoStacks > 0 and GetTickCount() > Enemy.HemoTmr + 5000 then
-			Enemy.HemoStacks = 0
-		end
+		--if Enemy.HemoStacks > 0 and GetTickCount() > Enemy.HemoTmr + 5000 then
+		--	Enemy.HemoStacks = 0
+		--end
 		
 		if Get2dDistance(myHero, Enemy) <= 1200 and not Enemy.dead then
 			if DariusMenu.Spells.AutoQKs then
@@ -538,7 +542,7 @@ end
 
 
 function TurretsUpdate()
-	for i, Turret in pairs(EnemyTowers) do
+	for i, Turret in pairs(EnemyTurrets) do
         if Turret.valid == false or Turret.dead or Turret.health == 0 then
 			table.remove(EnemyTurrets, Turret)
 		end
@@ -547,7 +551,14 @@ end
 
 
 function IsHeroUnderTower(Hero)
-
+	for i, Turret in pairs(EnemyTurrets) do
+		if Turret ~= nil and Turret.health > 0 then
+			if Get2dDistance(Hero, Turret) <= 1300 then
+				return true
+			end
+		end
+	end
+	return false
 end
 
 
@@ -585,7 +596,7 @@ function OnLoad()
 	DariusMenu:addSubMenu("Harass", "Harass")
 		DariusMenu.Harass:addParam("UsePerfectHarass", "Perfect Harass", SCRIPT_PARAM_ONOFF , true)
 		DariusMenu.Harass:addParam("ManaCheck", "Don't harass under mana %", SCRIPT_PARAM_SLICE, 0, 0, 100)
-		-- DariusMenu.Harass:addParam("TowerCheck", "Don't harass under towers", SCRIPT_PARAM_ONOFF , true)
+		DariusMenu.Harass:addParam("TowerCheck", "Don't harass under towers", SCRIPT_PARAM_ONOFF , true)
 	
 	DariusMenu:addSubMenu("Spells", "Spells")
 		DariusMenu.Spells:addParam("AutoLevelUlti", "Auto add Dunk", SCRIPT_PARAM_ONOFF , true)
@@ -676,7 +687,13 @@ function OnTick()
 	end
 	
 	if not DariusMenu.ComboKey and (DariusMenu.Harass1Key or DariusMenu.Harass2Key) then
-		DoHarass(MainTarget)
+		if DariusMenu.Harass.TowerCheck then
+			if not IsHeroUnderTower(myHero) then
+				DoHarass(MainTarget)
+			end
+		else
+			DoHarass(MainTarget)
+		end
 	end
 	
 end
@@ -700,18 +717,37 @@ function OnDraw()
 		end
 		
 		for i, Enemy in pairs(EnemyTable) do
-			if Enemy ~= nil and not Enemy.dead and Get2dDistance(Enemy, myHero) <= 1200  and Enemy.visible then
+			if Enemy ~= nil and not Enemy.dead and Get2dDistance(Enemy, myHero) <= 2000  and Enemy.visible then
 				DrawStacks(Enemy)
 			end
 		end
 	end
 end
 
+--[[
+	104 STH WITH CHAT
+
+
+function OnRecvPacket(P)
+	if P.header ~= 106 and P.header ~= 96 and P.header ~= 146 and P.header ~= 117 and P.header ~= 43 and P.header ~= 195 and P.header ~= 51 and P.header ~= 109 and P.header ~= 254 and P.header ~= 26
+		and P.header ~= 89 and P.header ~= 173 and P.header ~= 190 and P.header ~= 37 and P.header ~= 105 and P.header ~= 28 and P.header ~= 122 and P.header ~= 182 and P.header ~= 79 and P.header ~= 16 
+		and P.header ~= 157 and P.header ~= 180 and P.header ~= 192 and P.header ~= 155 and P.header ~= 134 and P.header ~= 185 and P.header ~= 12 and P.header ~= 62 and P.header ~= 55 and P.header ~= 121 
+		and P.header ~= 80 and P.header ~= 31 and P.header ~= 50 and P.header ~= 126 and P.header ~= 23 and P.header ~= 215 and P.header ~= 132 and P.header ~= 21 and P.header ~= 147 and P.header ~= 58
+		and P.header ~= 67 and P.header ~= 110 and P.header ~= 35 and P.header ~= 52 and P.header ~= 58 and P.header ~= 67 and P.header ~= 40 and P.header ~= 46 and P.header ~= 102 and P.header ~= 103
+		and P.header ~= 40  and P.header ~= 158 and P.header ~= 239 and P.header ~= 107 and P.header ~= 104 and P.header ~= 150 and P.header ~= 11
+	then
+		PrintChat(tostring(P.header))
+	end
+end
+
+]]--
+
+
 
 function OnCreateObj(Obj)
     if string.find(Obj.name,"darius_Base_hemo_counter_") then
         for i, Enemy in pairs(EnemyTable) do
-            if Enemy ~= nil and not Enemy.dead and Enemy.visible and  GetDistance(Enemy, Obj) <= 80 then
+            if Enemy ~= nil and not Enemy.dead and  GetDistance(Enemy, Obj) <= 80 then
 				for j, Hemo in pairs(HemoTable) do
 					if Obj.name == Hemo then
 						Enemy.HemoStacks = j
