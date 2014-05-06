@@ -51,8 +51,8 @@ end
 ]]--
 
 local AARange = 125
-
 local ExtraDmg = 1.0
+local MyHeroLevel = 0
 
 local MainTarget = nil
 local EnemyTable = {}
@@ -106,6 +106,7 @@ end
 class 'SpellQ'
 
 function SpellQ:__init()
+	self.BaseRange = 425
 	self.Range = 425
 	self.Ready = false
 	self.MinRange = 270
@@ -178,6 +179,7 @@ end
 class 'SpellW'
 
 function SpellW:__init()
+	self.BaseRange = 145
 	self.Range = 145
 	self.Ready = false
 	self.ManaCost = 30
@@ -222,6 +224,7 @@ end
 class 'SpellE'
 
 function SpellE:__init()
+	self.BaseRange = 540
 	self.Range = 540
 	self.Ready = false
 	self.ManaCost = 45
@@ -262,6 +265,7 @@ end
 class 'SpellR'
 
 function SpellR:__init()
+	self.BaseRange = 460
 	self.Range = 460
 	self.Ready = false
 	self.ManaCost = 100
@@ -301,6 +305,7 @@ class 'SpellIgnite'
 
 function SpellIgnite:__init()
 	self.Name = "SummonerDot"
+	self.BaseRange = 600
 	self.Range = 600
 	self.Ready = false
 	self.ID = nil
@@ -411,12 +416,33 @@ end
 -------------------------------------------------------------------------------------------------------------------------------
 
 
+
+function OnLevelUp()
+	if myHero.level > MyHeroLevel then
+		if DariusMenu.Spells.AutoLevelUlti and myHero.level == 6 or myHero.level == 11 or myHero.level == 16 then
+			LevelSpell(_R)
+		end
+		W:SetMana()
+		MyHeroLevel = myHero.level
+	end
+end
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+
+
 function SpellStateUpdate()
 	if myHero:CanUseSpell(_Q) then Q.Ready = true else Q.Ready = false end
 	if myHero:CanUseSpell(_W) then W.Ready = true else W.Ready = false end
 	if myHero:CanUseSpell(_E) then E.Ready = true else E.Ready = false end
 	if myHero:CanUseSpell(_R) then R.Ready = true else R.Ready = false end
 	if myHero:CanUseSpell(Ignite.ID) then Ignite.Ready = true else Ignite.Ready = false end
+	
+	Q.Range = Q.BaseRange - DariusMenu.Spells.DecreaseQRange
+	E.Range = E.BaseRange - DariusMenu.Spells.DecreaseERange
+	
 end
 
 
@@ -536,12 +562,15 @@ function OnLoad()
 		-- DariusMenu.Harass:addParam("TowerCheck", "Don't harass under towers", SCRIPT_PARAM_ONOFF , true)
 	
 	DariusMenu:addSubMenu("Spells", "Spells")
+		DariusMenu.Spells:addParam("AutoLevelUlti", "Auto add Dunk", SCRIPT_PARAM_ONOFF , true)
 		DariusMenu.Spells:addParam("DecreaseDunkDmg", "Decrease Dunk Dmg for: ", SCRIPT_PARAM_SLICE, 30, 0, 150)
 		DariusMenu.Spells:addParam("AutoDunk1", "Auto Dunk", SCRIPT_PARAM_ONOFF , true)
 		DariusMenu.Spells:addParam("AutoDunk2", "Auto Dunk (TOGGLE)",  SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("X"))
 		DariusMenu.Spells:permaShow("AutoDunk1")
 		DariusMenu.Spells:permaShow("AutoDunk2")
 		DariusMenu.Spells:addParam("FreeSpace", " ", SCRIPT_PARAM_INFO, " ")
+		DariusMenu.Spells:addParam("DecreaseERange", "Decrease E Range for: ", SCRIPT_PARAM_SLICE, 20, 0, 50)
+		DariusMenu.Spells:addParam("DecreaseQRange", "Decrease Q Range for: ", SCRIPT_PARAM_SLICE, 20, 0, 50)
 		DariusMenu.Spells:addParam("AutoQKs", "Auto kill steal with Q", SCRIPT_PARAM_ONOFF , true)
 		DariusMenu.Spells:addParam("FreeSpace", " ", SCRIPT_PARAM_INFO, " ")
 		DariusMenu.Spells:addParam("QCheckVisible", "Cast Q only on visible targets", SCRIPT_PARAM_ONOFF , false)
@@ -605,6 +634,7 @@ function OnTick()
 	MainTarget = Ts.target
 	SpellStateUpdate()
 	KillSteal()	
+	OnLevelUp()
 	
 	if DariusMenu.ComboKey then
 		DoCombo(MainTarget)
