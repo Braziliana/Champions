@@ -57,7 +57,9 @@ local MyHeroLevel = 0
 local MainTarget = nil
 local EnemyTable = {}
 
-local DariusHemoTable = {
+local EnemyTurrets = {}
+
+local HemoTable = {
 [0] = "darius_Base_hemo_counter_01.troy",
 [1] = "darius_Base_hemo_counter_02.troy",
 [3] = "darius_Base_hemo_counter_03.troy",
@@ -407,14 +409,13 @@ end
 
 function DrawStacks(Hero)
 	local x, y, z =  GetObjectCenter(Hero)
-	DrawText(tostring(Hero.Stacks), 20, x, y, ColorTable.White)
+	DrawText(tostring(Hero.HemoStacks), 20, x, y, ColorTable.White)
 end 
 
 
 -------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------
-
 
 
 function OnLevelUp()
@@ -531,6 +532,31 @@ function KillSteal()
 end
 
 
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+function TurretsUpdate()
+	for i, Turret in pairs(EnemyTowers) do
+        if Turret.valid == false or Turret.dead or Turret.health == 0 then
+			table.remove(EnemyTurrets, Turret)
+		end
+	end
+end
+
+
+function IsHeroUnderTower(Hero)
+
+end
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+
 --[[
 
 	Main
@@ -609,6 +635,15 @@ function OnLoad()
 		end
 	end
 	
+	for i = 0, objManager.maxObjects do
+		local Obj = objManager:getObject(i)
+		if Obj ~= nil and (Obj.type == "obj_AI_Turret") then
+			if Obj.team ~= myHero.team then
+				table.insert(EnemyTurrets, Obj)
+			end
+		end
+	end
+	
 	Q = SpellQ()
 	W = SpellW()
 	E = SpellE()
@@ -673,12 +708,12 @@ function OnDraw()
 end
 
 
-function OnCreateObj(obj)
-    if string.find(obj.name,"darius_Base_hemo_counter_") then
+function OnCreateObj(Obj)
+    if string.find(Obj.name,"darius_Base_hemo_counter_") then
         for i, Enemy in pairs(EnemyTable) do
-            if Enemy and not Enemy.dead and Enemy.visible and  GetDistance(Enemy, obj) <= 80 then
-				for j, Hemo in pairs(HemorrhageTablica) do
-					if obj.name == Hemo then
+            if Enemy ~= nil and not Enemy.dead and Enemy.visible and  GetDistance(Enemy, Obj) <= 80 then
+				for j, Hemo in pairs(HemoTable) do
+					if Obj.name == Hemo then
 						Enemy.HemoStacks = j
 						Enemy.HemoTmr = GetTickCount()
 					end
@@ -699,11 +734,7 @@ function OnGainBuff(Unit, Buff)
 	for i, Enemy in pairs(EnemyTable) do
 		if Unit.charName == Enemy.charName then
 			if Buff.name == "dariushemo" then
-				if Buff.stack ~= nil then
-					Enemy.Stacks = Buff.stack
-				else
-					Enemy.Stacks = 1
-				end
+				Enemy.HemoStacks = 1
 			end
 		end
 	end
@@ -712,7 +743,7 @@ function OnLoseBuff(Unit, Buff)
 	for i, Enemy in pairs(EnemyTable) do
 		if Unit.charName == Enemy.charName then
 			if Buff.name == "dariushemo" then
-				Enemy.Stacks = 0
+				Enemy.HemoStacks = 0
 			end
 		end
 	end
@@ -721,7 +752,7 @@ function OnUpdateBuff(Unit, Buff)
 	for i, Enemy in pairs(EnemyTable) do
 		if Unit.charName == Enemy.charName and Buff ~= nil and Buff.stack ~= nil then
 			if Buff.name == "dariushemo" then
-				Enemy.Stacks = Buff.stack
+				Enemy.HemoStacks = Buff.stack
 			end
 		end
 	end
