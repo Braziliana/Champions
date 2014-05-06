@@ -101,6 +101,8 @@ end
 -------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------------------------------------------------
+
+
 class 'SpellQ'
 
 function SpellQ:__init()
@@ -360,10 +362,10 @@ function Draw3DBox(Object, Linesize, Linecolor)
 	Linecolor = Linecolor or ARGB(255, 255, 255, 0)
 	if Object and Object.minBBox then
 	
-		x1, y1, z1 = get2DFrom3D(Object.minBBox.x, Object.minBBox.y, Object.minBBox.z)
-		x2, y2, z2 = get2DFrom3D(Object.maxBBox.x, Object.minBBox.y, Object.minBBox.z)
-		x3, y3, z3 = get2DFrom3D(Object.minBBox.x, Object.maxBBox.y, Object.maxBBox.z)
-		x4, y4, z4 = get2DFrom3D(Object.maxBBox.x, Object.maxBBox.y, Object.maxBBox.z)
+		local x1, y1, z1 = get2DFrom3D(Object.minBBox.x, Object.minBBox.y, Object.minBBox.z)
+		local x2, y2, z2 = get2DFrom3D(Object.maxBBox.x, Object.minBBox.y, Object.minBBox.z)
+		local x3, y3, z3 = get2DFrom3D(Object.minBBox.x, Object.maxBBox.y, Object.maxBBox.z)
+		local x4, y4, z4 = get2DFrom3D(Object.maxBBox.x, Object.maxBBox.y, Object.maxBBox.z)
 		
 		DrawLine(x1, y1, x2, y2, Linesize, Linecolor)
 		DrawLine(x2, y2, x4, y4, Linesize, Linecolor)
@@ -375,6 +377,38 @@ end
 function MenuColorToARGB(MenuColor)
 	return ARGB(MenuColor[1], MenuColor[2], MenuColor[3], MenuColor[4])
 end
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+function GetObjectCenter(Object)
+	if Object ~= nil and Object.minBBox then
+		local x1, y1, z1 = get2DFrom3D(Object.minBBox.x, Object.minBBox.y, Object.minBBox.z)
+		local x2, y2, z2 = get2DFrom3D(Object.maxBBox.x, Object.maxBBox.y, Object.maxBBox.z)
+		
+		local CenterX = (x1 + x2)/2 
+		local CenterY = (y1 + y2)/2
+			
+		return CenterX, CenterY
+		
+	else
+		return 0, 0, 0
+	end
+end
+
+
+function DrawStacks(Hero)
+	local x, y, z =  GetObjectCenter(Hero)
+	DrawText(tostring(Hero.Stacks), 20, x, y, ColorTable.White)
+end 
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------
 
 
 function SpellStateUpdate()
@@ -417,12 +451,22 @@ end
 
 function DoHarass(Target)
 	if Target ~= nil and not Target.dead then
-		if myHero.mana/myHero.maxMana >= DariusMenu.Harass.ManaCheck then
-			if DariusMenu.Harass.UsePerfectHarass then
-				Q:Harass(Target, true)
-			else
-				Q:Harass(Target, false)
+		if DariusMenu.Spells.QCheckVisible then
+			if myHero.mana/myHero.maxMana >= DariusMenu.Harass.ManaCheck and Target.visible then
+				if DariusMenu.Harass.UsePerfectHarass then
+					Q:Harass(Target, true)
+				else
+					Q:Harass(Target, false)
+				end
 			end
+		else
+			if myHero.mana/myHero.maxMana >= DariusMenu.Harass.ManaCheck then
+				if DariusMenu.Harass.UsePerfectHarass then
+					Q:Harass(Target, true)
+				else
+					Q:Harass(Target, false)
+				end
+			end		
 		end
 	end
 end
@@ -435,6 +479,11 @@ end
 
 function KillSteal()
 	for i, Enemy in pairs(EnemyTable) do
+		
+		if Enemy.HemoStacks > 0 and GetTickCount() > Enemy.HemoTmr + 5000 then
+			Enemy.HemoStacks = 0
+		end
+		
 		if Get2dDistance(myHero, Enemy) <= 1200 and not Enemy.dead then
 			if DariusMenu.Spells.AutoQKs then
 				if Q.Ready and  Q:DmgToTarget(Enemy) > Enemy.health then
@@ -496,7 +545,6 @@ function OnLoad()
 		DariusMenu.Spells:addParam("AutoQKs", "Auto kill steal with Q", SCRIPT_PARAM_ONOFF , true)
 		DariusMenu.Spells:addParam("FreeSpace", " ", SCRIPT_PARAM_INFO, " ")
 		DariusMenu.Spells:addParam("QCheckVisible", "Cast Q only on visible targets", SCRIPT_PARAM_ONOFF , false)
-		DariusMenu.Spells:addParam("ECheckVisible", "Cast E only on visible targets", SCRIPT_PARAM_ONOFF , false)
 		
 	DariusMenu:addSubMenu("Misc", "Misc")
 		DariusMenu.Misc:addParam("AutoIgnite", "Auto Ignite", SCRIPT_PARAM_ONOFF , true)
@@ -556,7 +604,7 @@ function OnTick()
 	Ts:update()
 	MainTarget = Ts.target
 	SpellStateUpdate()
-	KillSteal()
+	KillSteal()	
 	
 	if DariusMenu.ComboKey then
 		DoCombo(MainTarget)
@@ -585,15 +633,22 @@ function OnDraw()
 		if DariusMenu.Draw.DrawFocus and MainTarget ~= nil and MainTarget.visible and not MainTarget.dead then
 			Draw3DBox(MainTarget, 1, MenuColorToARGB(DariusMenu.Draw.FocusColor))
 		end
+		
+		for i, Enemy in pairs(EnemyTable) do
+			if Enemy ~= nil and not Enemy.dead and Get2dDistance(Enemy, myHero) <= 1200  and Enemy.visible then
+				DrawStacks(Enemy)
+			end
+		end
 	end
 end
 
-function OnCreateObj(Obj)
-	if string.find(Obj.name,"darius_Base_hemo_counter") then
+
+function OnCreateObj(obj)
+    if string.find(obj.name,"darius_Base_hemo_counter_") then
         for i, Enemy in pairs(EnemyTable) do
-            if Enemy and not Enemy.dead and Enemy.visible and  GetDistance(Enemy, Obj) <= 80 then
-				for j, Hemorrhage in pairs(DariusHemoTable) do
-					if Obj.name == Hemorrhage then
+            if Enemy and not Enemy.dead and Enemy.visible and  GetDistance(Enemy, obj) <= 80 then
+				for j, Hemo in pairs(HemorrhageTablica) do
+					if obj.name == Hemo then
 						Enemy.HemoStacks = j
 						Enemy.HemoTmr = GetTickCount()
 					end
@@ -603,31 +658,42 @@ function OnCreateObj(Obj)
     end
 end
 
+function OnDeleteObj(obj)
 
+
+end
+
+
+--[[
 function OnGainBuff(Unit, Buff)
-	if Buff.name == "dariushemo" then
-		for i, Enemy in pairs(EnemyTable) do
-			if Unit.charName == Enemy.charName then
-				Enemy.Stacks = 1
+	for i, Enemy in pairs(EnemyTable) do
+		if Unit.charName == Enemy.charName then
+			if Buff.name == "dariushemo" then
+				if Buff.stack ~= nil then
+					Enemy.Stacks = Buff.stack
+				else
+					Enemy.Stacks = 1
+				end
 			end
 		end
 	end
 end
 function OnLoseBuff(Unit, Buff)
-	if Buff.name == "dariushemo" then
-		for i, Enemy in pairs(EnemyTable) do
-			if Unit.charName == Enemy.charName then
+	for i, Enemy in pairs(EnemyTable) do
+		if Unit.charName == Enemy.charName then
+			if Buff.name == "dariushemo" then
 				Enemy.Stacks = 0
 			end
 		end
 	end
 end
 function OnUpdateBuff(Unit, Buff)
-	if Buff.name == "dariushemo" then
-		for i, Enemy in pairs(EnemyTable) do
-			if Unit.charName == Enemy.charName then
+	for i, Enemy in pairs(EnemyTable) do
+		if Unit.charName == Enemy.charName and Buff ~= nil and Buff.stack ~= nil then
+			if Buff.name == "dariushemo" then
 				Enemy.Stacks = Buff.stack
 			end
 		end
 	end
 end
+]]--
